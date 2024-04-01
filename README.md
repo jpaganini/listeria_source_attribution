@@ -1,6 +1,6 @@
 This repository contains code and data necessary to reproduce results from the paper:
 
-"Source attribution of Listeria monocytogenes in the Netherlands"
+**"Source attribution of Listeria monocytogenes in the Netherlands"**
 
 To generate the RF models and to reproduce table(s) 2 to 4 and supplementary table(s) 1 to 10, run the script: src/rf_lysteria_source.py
 
