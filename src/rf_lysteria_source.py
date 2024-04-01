@@ -65,9 +65,6 @@ from imblearn.over_sampling import SMOTE
 import joblib
 from joblib import dump, load
 
-###### ------- MUVR ------- ######
-#from py_muvr.feature_selector import FeatureSelector
-from concurrent.futures import ProcessPoolExecutor
 
 import shap
 
@@ -89,121 +86,6 @@ def load_features(feature_file):
 
     return features
 
-def prepare_data_muvr(train_data):
-    # THIS MIGHT HAVE TO BE REMOVED - OR PUT IN A DIFFERENT SCRIPT
-    train_data_df = pd.read_csv(train_data, sep='\t', header=0, index_col=0)
-
-    train_data_muvr = train_data_df.sort_index().drop_duplicates(subset=['t5', 'SYMP'],
-                                                       keep='last')  # remove samples that contain a +
-
-    train_data_muvr.to_csv(r'2023_train_data_filtered.tsv', sep='\t')
-
-    return train_data_muvr
-
-def feature_reduction(train_data_muvr,chisq_file, model):
-    # THIS MIGHT HAVE TO BE REMOVED - OR PUT IN A DIFFERENT SCRIPT
-    train_data_muvr = pd.read_csv(train_data_muvr, sep='\t', header=0)
-    train_data_muvr= train_data_muvr.set_index('SRA')
-    columns_to_drop = ['MOLIS', 'LINEAGE','STX','SNP ADDRESS','t5','SYMP H/L']  # Replace with the actual column names
-    train_data_muvr = train_data_muvr.drop(columns=columns_to_drop)
-
-    # Create an iterator for reading chisq_features line by line
-    reader_chisq = pd.read_csv(chisq_file, sep='\t', header=0, iterator=True, chunksize=1)
-
-    # Create a dataframe to hold the results
-    model_input = pd.DataFrame()
-
-    # Get the first line of chisq_features
-    try:
-        chunk_chisq = next(reader_chisq)
-    except StopIteration:
-        chunk_chisq = pd.DataFrame()
-
-    while not chunk_chisq.empty:
-        # Set the index as the first column
-        chunk_chisq.set_index(chunk_chisq.columns[0], inplace=True)
-        chunk_chisq = chunk_chisq.astype("int8")
-
-        # Merge the current line with isolate_metadata based on your desired criteria
-        merged_line = pd.merge(train_data_muvr, chunk_chisq, left_index=True, right_index=True, how='inner')
-        #print(merged_line)
-        model_input = pd.concat([model_input, merged_line], ignore_index=False)
-
-        #Get the following lines of the dataframe
-        try:
-            chunk_chisq = next(reader_chisq)
-        except StopIteration:
-            chunk_chisq = pd.DataFrame()
-
-    to_predict = ['SYMP']
-
-    X_muvr = model_input.drop('SYMP', axis = 1).to_numpy()
-    y_muvr = model_input['SYMP'].values.ravel()
-
-    if model=='XGBC':
-        encoder = OneHotEncoder(sparse=False)
-
-    # Reshape y to a 2D array as fit_transform expects a 2D array
-        y_encoded = encoder.fit_transform(np.array(y_muvr).reshape(-1, 1))
-        y_variable = y_encoded
-
-    elif model=='RFC':
-        y_variable = y_muvr
-
-    else:
-        print ("Select a valid model: RFC or XBGC")
-        SystemExit
-
-
-
-    feature_names = model_input.drop(columns=["SYMP"]).columns
-
-
-    feature_selector = FeatureSelector(
-        n_repetitions=10,
-        n_outer=5,
-        n_inner=4,
-        estimator=model,
-        metric="MISS",
-        features_dropout_rate=0.9
-    )
-
-    feature_selector.fit(X_muvr, y_variable)
-    selected_features = feature_selector.get_selected_features(feature_names=feature_names)
-
-    # Obtain a dataframe containing MUVR selected features
-    df_muvr_min = model_input[to_predict+list(selected_features.min)]
-    df_muvr_mid = model_input[to_predict+list(selected_features.mid)]
-    df_muvr_max = model_input[to_predict+list(selected_features.max)]
-
-    print('something')
-
-    #df_muvr_min.to_csv(r'2023_jp_muvr_min.tsv', sep='\t')
-    #df_muvr_mid.to_csv(r'2023_jp_muvr_mid.tsv', sep='\t')
-    #df_muvr_max.to_csv(r'2023_jp_muvr_max.tsv', sep='\t')
-
-    return df_muvr_max
-
-def feature_extraction(min_muvr_filtered_file, mid_muvr_filtered_file, max_muvr_filtered_file, chisq_file):
-    # THIS MIGHT HAVE TO BE REMOVED - OR PUT IN A DIFFERENT SCRIPT
-    min_features_columns = pd.read_csv(min_muvr_filtered_file, sep='\t', header=0, index_col=0).columns[1:].tolist()
-    mid_features_columns = pd.read_csv(mid_muvr_filtered_file, sep='\t', header=0, index_col=0).columns[1:].tolist()
-    max_features_columns = pd.read_csv(max_muvr_filtered_file, sep='\t', header=0, index_col=0).columns[1:].tolist()
-
-    #Get column names
-    min_features_columns = ['Unnamed: 0'] + min_features_columns
-    mid_features_columns = ['Unnamed: 0'] + mid_features_columns
-    max_features_columns = ['Unnamed: 0'] + max_features_columns
-
-    #Get data from chisq file
-    min_chisq_data = pd.read_csv(chisq_file, sep='\t', header=0, index_col=0, usecols=min_features_columns)
-    mid_chisq_data = pd.read_csv(chisq_file, sep='\t', header=0, index_col=0, usecols=mid_features_columns)
-    max_chisq_data = pd.read_csv(chisq_file, sep='\t', header=0, index_col=0, usecols=max_features_columns)
-
-
-    min_chisq_data.to_csv(r'2023_jp_complete_muvr_min.tsv', sep='\t')
-    mid_chisq_data.to_csv(r'2023_jp_complete_muvr_mid.tsv', sep='\t')
-    max_chisq_data.to_csv(r'2023_jp_complete_muvr_max.tsv', sep='\t')
 
 def tune_model(model_name, model_input, sampling, block_strategy, cv_strategy, experiment_name):
     RSEED = 50
@@ -214,19 +96,7 @@ def tune_model(model_name, model_input, sampling, block_strategy, cv_strategy, e
     #Set Model
     if model_name == 'RF':
         model = RandomForestClassifier(random_state=RSEED)
-        scoring_strategy=['accuracy','balanced_accuracy']
-
-    if model_name == 'XGBC':
-        # Encode the labels
-        encoder = LabelEncoder()
-        train_labels = encoder.fit_transform(train_labels)
-        #Calculate sample weights
-        sample_weights = compute_sample_weight(
-            class_weight='balanced',
-            y=train_labels
-        )
-        # Calculate sample weights
-        model = XGBClassifier(objective='multi:softmax')
+        scoring_strategy=['accuracy']
 
 
 
@@ -235,38 +105,12 @@ def tune_model(model_name, model_input, sampling, block_strategy, cv_strategy, e
         #===RF-SPECIFIC
         # number of features at every split
         max_features = ['log2', 'sqrt']
+        # number of trees
+        n_estimators = [int(x) for x in np.linspace(start=200, stop=1000, num=10)]
 
         # max depth
         max_depth = [int(x) for x in np.linspace(100, 500, num=10)]
 
-        #===SMOTE
-        #K-neighbors for smote
-        k_neighbors = [1,2,3,4]
-
-        #==XGBC
-        eta = np.linspace(0.01, 0.2, 10)
-        gamma = [0,3,5,7,9]
-        max_depth_xgbc = [3,4,5,6,7,8,9,10]
-        min_child_weight = [1,2,3,4,5]
-        subsample = [0.6, 0.7, 0.8, 0.9, 1]
-        #scale_pos_weight = sample_weights #only for binary classification
-        colsample_bytree = [0.7, 0.8, 0.9, 1]
-
-        #==COMMON MODEL PARAMETERS
-        # number of trees
-        n_estimators = [int(x) for x in np.linspace(start=200, stop=1000, num=10)]
-
-    if cv_strategy == 'grid':
-         max_features=['sqrt']
-         best_n_estimators=644
-         lower_bound_estimators = best_n_estimators - 5
-         upper_bound_estimators = best_n_estimators + 5
-         n_estimators = list(range(lower_bound_estimators, upper_bound_estimators + 1))
-
-         best_max_depth=340
-         lower_bound_depth = best_max_depth - 5
-         upper_bound_depth = best_max_depth + 5
-         max_depth = list(range(lower_bound_estimators, upper_bound_estimators + 1))
 
     #Create a imblearn Pipeline to tune hyper-parameters with oversampling included
 
@@ -275,21 +119,6 @@ def tune_model(model_name, model_input, sampling, block_strategy, cv_strategy, e
         oversampler = RandomOverSampler(random_state=RSEED)
         # create random grid
         random_grid = {
-            'model__n_estimators': n_estimators,
-            'model__max_features': max_features,
-            'model__max_depth': max_depth
-        }
-
-        tunning_pipeline = Pipeline([
-            ('oversampler', oversampler),
-            ('model', model)
-        ])
-
-    if sampling == 'smote':
-        oversampler = SMOTE(random_state=RSEED)
-        # create random grid
-        random_grid = {
-            'oversampler__k_neighbors': k_neighbors,
             'model__n_estimators': n_estimators,
             'model__max_features': max_features,
             'model__max_depth': max_depth
@@ -312,34 +141,6 @@ def tune_model(model_name, model_input, sampling, block_strategy, cv_strategy, e
                 ('model', model)
             ])
 
-        elif model_name == 'XGBC':
-            random_grid = {
-                'eta': eta,
-                'gamma': gamma,
-                'max_depth': max_depth_xgbc,
-                'min_child_weight': min_child_weight,
-                'subsample': subsample,
-                #'model__sample_weight': sample_weights, #pass directly to fit object
-                'colsample_bytree': colsample_bytree,
-                'n_estimators': n_estimators
-            }
-
-            tunning_pipeline = model
-            #tunning_pipeline = Pipeline([
-            #    ('model', model)
-            #])
-
-
-    #create iterator list according to the blocking strategy
-    if block_strategy=='t5':
-        groups = np.array(model_input['t5'])
-        sfgs = StratifiedGroupKFold(n_splits=10)
-        cv_iterator = list(sfgs.split(train, train_labels, groups=groups))
-
-    if block_strategy=='lineage':
-        groups = np.array(model_input['LINEAGE'])
-        logo = LeaveOneGroupOut()
-        cv_iterator = list(logo.split(train, train_labels, groups=groups))
 
     if block_strategy=='none':
         #groups = np.array(model_input['t5'])
@@ -352,14 +153,9 @@ def tune_model(model_name, model_input, sampling, block_strategy, cv_strategy, e
     if cv_strategy == 'random':
         model_tunning = RandomizedSearchCV(estimator=tunning_pipeline, param_distributions = random_grid, n_iter = 100, cv = cv_iterator, scoring=scoring_strategy, refit='accuracy', verbose=2, random_state=RSEED, n_jobs = -1)
 
-    if cv_strategy == 'grid':
-        model_tunning = GridSearchCV(estimator=tunning_pipeline, param_grid = random_grid, cv = cv_iterator, verbose=2, n_jobs = -1)
 
     if model_name == 'RF':
         model_tunning.fit(train, train_labels)
-
-    #if model_name == 'XGBC':
-    #    model_tunning.fit(train, train_labels, sample_weight=sample_weights, verbose=False)
 
 
     # Select the best parameters and get all CV results
@@ -395,17 +191,6 @@ def build_confusion_matrix(model_input, best_params, sampling,block_strategy, mo
     #set up the random seed
     RSEED = 50
 
-    #Create an iterator to separate files in groups
-    if block_strategy=='t5':
-        groups = np.array(model_input['t5'])
-        sgkf=StratifiedGroupKFold(n_splits=10)
-        cv_iterator = list(sgkf.split(features, all_labels, groups=groups))
-
-    if block_strategy=='lineage':
-        groups = np.array(model_input['LINEAGE'])
-        logo = LeaveOneGroupOut()
-        cv_iterator = list(logo.split(features, all_labels, groups=lineages))
-
     if block_strategy=='none':
         #groups = np.array(model_input['t5'])
         rskf = StratifiedKFold(n_splits=10, shuffle=True, random_state=RSEED)
@@ -431,11 +216,6 @@ def build_confusion_matrix(model_input, best_params, sampling,block_strategy, mo
         train_features = train.iloc[:,1:]
         train_labels = train['labels'].values.ravel()
 
-        if model_name =='XGBC':
-            encoder = LabelEncoder()
-            test_labels = encoder.fit_transform(test_labels)
-            train_labels = encoder.fit_transform(train_labels)
-
         if model_name == 'RF':
             if sampling=='random':
                 features_resampled, labels_resampled = RandomOverSampler(random_state=RSEED).fit_resample(train_features,train_labels)
@@ -444,13 +224,6 @@ def build_confusion_matrix(model_input, best_params, sampling,block_strategy, mo
                                                max_features=best_params['model__max_features'],
                                                max_depth=best_params['model__max_depth'],
                                                n_jobs=-1, verbose=1)
-            if sampling=='smote':
-                features_resampled, labels_resampled = SMOTE(random_state=RSEED,k_neighbors=1).fit_resample(train_features,train_labels)
-                model = RandomForestClassifier(n_estimators=best_params['model__n_estimators'],
-                                               random_state=RSEED,
-                                               max_features=best_params['model__max_features'],
-                                               max_depth=best_params['model__max_depth'],
-                                               n_jobs=-1, verbose=1)
             if sampling=='none':
                 model = RandomForestClassifier(n_estimators=best_params['model__n_estimators'],
                                                random_state=RSEED,
@@ -458,36 +231,6 @@ def build_confusion_matrix(model_input, best_params, sampling,block_strategy, mo
                                                max_depth=best_params['model__max_depth'],
                                                n_jobs=-1, verbose=1)
 
-        if model_name == 'XGBC':
-
-            if sampling=='none':
-                sample_weights = compute_sample_weight(
-                    class_weight='balanced',
-                    y=train_labels
-                )
-                model = XGBClassifier(objective='multi:softmax',
-                                      subsample=0.7,
-                                      n_estimators=822,
-                                      min_child_weight=1,
-                                      max_depth=9,
-                                      gamma=0,
-                                      eta=0.178,
-                                      colsample_bytree=0.8,
-                                      random_state=RSEED,
-                                      n_jobs=-1)
-
-            if sampling=='random':
-                features_resampled, labels_resampled = RandomOverSampler(random_state=RSEED).fit_resample(train_features,train_labels)
-                model = XGBClassifier(n_estimators=822,
-                                               random_state=RSEED,
-                                               max_features='sqrt',
-                                               n_jobs=-1, verbose=1, max_depth=220)
-            if sampling=='smote':
-                features_resampled, labels_resampled = SMOTE(random_state=RSEED,k_neighbors=1).fit_resample(train_features,train_labels)
-                model = XGBClassifier(n_estimators=377,
-                                               random_state=RSEED,
-                                               max_features='sqrt',
-                                               n_jobs=-1, verbose=1, max_depth=300)
 
         if sampling == 'none':
             model.fit(train_features,train_labels)
@@ -612,66 +355,52 @@ print('All data has been imported')
 
 #2. RF HYPER-PARAMETER OPTIMIZATION & ACCURACY CALCULATION
 ##2.1 Source_1
-#rf_best_params_source_1,best_cv_results_source_1,rf_model_source_1 = tune_model('RF',train_data_s1, 'none', 'none', 'random','Source_1')
-#rf_best_params_source_1_up,best_cv_results_source_1_up,rf_model_source_1_up = tune_model('RF',train_data_s1, 'random', 'none', 'random','Source_1_up')
+rf_best_params_source_1,best_cv_results_source_1,rf_model_source_1 = tune_model('RF',train_data_s1, 'none', 'none', 'random','Source_1')
+rf_best_params_source_1_up,best_cv_results_source_1_up,rf_model_source_1_up = tune_model('RF',train_data_s1, 'random', 'none', 'random','Source_1_up')
 ##2.2 Source_2
-#rf_best_params_source_2,best_cv_results_source_2,rf_model_source_2 = tune_model('RF',train_data_s2, 'none', 'none', 'random','Source_2')
-#rf_best_params_source_2_up,best_cv_results_source_2_up, rf_model_source_2_up = tune_model('RF',train_data_s2, 'random', 'none', 'random','Source_2_up')
+rf_best_params_source_2,best_cv_results_source_2,rf_model_source_2 = tune_model('RF',train_data_s2, 'none', 'none', 'random','Source_2')
+rf_best_params_source_2_up,best_cv_results_source_2_up, rf_model_source_2_up = tune_model('RF',train_data_s2, 'random', 'none', 'random','Source_2_up')
 ##2.3 Source_2n1
-#rf_best_params_source_2n1,best_cv_results_source_2n1,rf_model_source_2n1 = tune_model('RF',train_data_s2n1, 'none', 'none', 'random','Source_2n1')
-#rf_best_params_source_2n1_up,best_cv_results_source_2n1_up,rf_model_source_2n1_up = tune_model('RF',train_data_s2n1, 'random', 'none', 'random','Source_2n1_up')
+rf_best_params_source_2n1,best_cv_results_source_2n1,rf_model_source_2n1 = tune_model('RF',train_data_s2n1, 'none', 'none', 'random','Source_2n1')
+rf_best_params_source_2n1_up,best_cv_results_source_2n1_up,rf_model_source_2n1_up = tune_model('RF',train_data_s2n1, 'random', 'none', 'random','Source_2n1_up')
 ##2.4 Source_3
 rf_best_params_source_3,best_cv_results_source_3,rf_model_source_3 = tune_model('RF',train_data_s3, 'none', 'none', 'random','Source_3')
 rf_best_params_source_3_up,best_cv_results_source_3_up,rf_model_source_3_up = tune_model('RF',train_data_s3, 'random', 'none', 'random','Source_3_up')
-
-#FOR TESTING - THIS WILL BE REMOVED ======
-#best_cv_results_source_1.to_csv('../results/tmp/tmp_best_model_source_1.tsv', sep='\t')
-#best_cv_results_source_1_up.to_csv('../results/tmp/tmp_best_model_source_1_up.tsv', sep='\t')
-#=============
-
 ##2.5 concatenate and export results
-#final_cv_results = pd.concat([best_cv_results_source_1, best_cv_results_source_1_up,
-#                              best_cv_results_source_2, best_cv_results_source_2_up,
-#                              best_cv_results_source_2n1, best_cv_results_source_2n1_up,
-#                              best_cv_results_source_3, best_cv_results_source_3_up,])
+final_cv_results = pd.concat([best_cv_results_source_1, best_cv_results_source_1_up,
+                              best_cv_results_source_2, best_cv_results_source_2_up,
+                              best_cv_results_source_2n1, best_cv_results_source_2n1_up,
+                              best_cv_results_source_3, best_cv_results_source_3_up,])
 
-#final_cv_results.to_csv('../results/01_model_training/summary_accuracy.tsv', sep='\t')
-
-
+final_cv_results.to_csv('../results/01_model_training/summary_accuracy.tsv', sep='\t')
 
 #3. CONFUSION MATRIX CONSTRUCTION
-#3.1 WITH TRAINING DATA - NO UP-SAMPLING
-#final_res_s1,cm_s1= build_confusion_matrix(train_data_s1, rf_best_params_source_1, 'none','none','RF', 'Source_1')
-#final_res_s2,cm_s2= build_confusion_matrix(train_data_s2, rf_best_params_source_2, 'none','none','RF', 'Source_2')
-#final_res_s2n1,cm_s2n1= build_confusion_matrix(train_data_s2n1, rf_best_params_source_2n1, 'none','none','RF', 'Source_2n1')
-#final_res_s3,cm_s3= build_confusion_matrix(train_data_s3, rf_best_params_source_3, 'none','none','RF', 'Source_3')
+##3.1 WITH TRAINING DATA - NO UP-SAMPLING
+final_res_s1,cm_s1= build_confusion_matrix(train_data_s1, rf_best_params_source_1, 'none','none','RF', 'Source_1')
+final_res_s2,cm_s2= build_confusion_matrix(train_data_s2, rf_best_params_source_2, 'none','none','RF', 'Source_2')
+final_res_s2n1,cm_s2n1= build_confusion_matrix(train_data_s2n1, rf_best_params_source_2n1, 'none','none','RF', 'Source_2n1')
+final_res_s3,cm_s3= build_confusion_matrix(train_data_s3, rf_best_params_source_3, 'none','none','RF', 'Source_3')
 
 ##3.2 TRAINING DATA - RANDOM UP-SAMPLING
-#final_res_s1_up,cm_s1_up= build_confusion_matrix(train_data_s1, rf_best_params_source_1_up, 'random','none','RF', 'Source_1_up')
-#final_res_s2_up,cm_s2_up= build_confusion_matrix(train_data_s2, rf_best_params_source_2_up, 'random','none','RF', 'Source_2_up')
-#final_res_s2n1_up,cm_s2n1_up= build_confusion_matrix(train_data_s2n1, rf_best_params_source_2n1_up, 'random','none','RF', 'Source_2n1_up')
-#final_res_s3_up,cm_s3_up= build_confusion_matrix(train_data_s3, rf_best_params_source_3_up, 'random','none','RF', 'Source_3_up')
-
-#4. LOAD MODELS - OPTIONAL
-#rf_model_source_2_up = joblib.load("../results/02_RF_models/RF_model_Source_2_up.joblib") #this will be removed
+final_res_s1_up,cm_s1_up= build_confusion_matrix(train_data_s1, rf_best_params_source_1_up, 'random','none','RF', 'Source_1_up')
+final_res_s2_up,cm_s2_up= build_confusion_matrix(train_data_s2, rf_best_params_source_2_up, 'random','none','RF', 'Source_2_up')
+final_res_s2n1_up,cm_s2n1_up= build_confusion_matrix(train_data_s2n1, rf_best_params_source_2n1_up, 'random','none','RF', 'Source_2n1_up')
+final_res_s3_up,cm_s3_up= build_confusion_matrix(train_data_s3, rf_best_params_source_3_up, 'random','none','RF', 'Source_3_up')
 
 
-#5. PREDICT HUMAN SAMPLES
-#5.1 Models with no up-sampling
-#predict_human(rf_model_source_1,test_data_s1,'Source_1')
-#predict_human(rf_model_source_2,test_data_s2,'Source_2')
-#predict_human(rf_model_source_2n1,test_data_s2n1,'Source_2n1')
-#predict_human(rf_model_source_3,test_data_s3,'Source_3')
+#4. PREDICT HUMAN SAMPLES
+##4.1 Models with no up-sampling
+predict_human(rf_model_source_1,test_data_s1,'Source_1')
+predict_human(rf_model_source_2,test_data_s2,'Source_2')
+predict_human(rf_model_source_2n1,test_data_s2n1,'Source_2n1')
+predict_human(rf_model_source_3,test_data_s3,'Source_3')
 
-#5.2 Models with random up-sampling
-#predict_human(rf_model_source_1_up,test_data_s1,'Source_1_up')
-#predict_human(rf_model_source_2_up,test_data_s2,'Source_2_up')
-#predict_human(rf_model_source_2n1_up,test_data_s2n1,'Source_2n1_up')
-#predict_human(rf_model_source_3_up,test_data_s3,'Source_3_up')
+##4.2 Models with random up-sampling
+predict_human(rf_model_source_1_up,test_data_s1,'Source_1_up')
+predict_human(rf_model_source_2_up,test_data_s2,'Source_2_up')
+predict_human(rf_model_source_2n1_up,test_data_s2n1,'Source_2n1_up')
+predict_human(rf_model_source_3_up,test_data_s3,'Source_3_up')
 
-
-
-#
 
 
 
