@@ -1,0 +1,399 @@
+---
+title: "Lysteria_plots"
+output: html_document
+date: "2024-03-04"
+---
+
+```{r setup, include=FALSE}
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(viridis)
+library(reshape2)
+library(plyr)
+library(gridExtra)
+
+```
+
+#1. Import data
+```{r}
+Probabilities_Source_1 <- read.delim("~/lysteria_rivm/results/03_human_predictions/Probabilities_Source_1.tsv")
+
+Probabilities_Source_2 <- read.delim("~/lysteria_rivm/results/03_human_predictions/Probabilities_Source_2.tsv")
+
+Probabilities_Source_2n1 <- read.delim("~/lysteria_rivm/results/03_human_predictions/Probabilities_Source_2n1.tsv")
+
+Probabilities_Source_3 <- read.delim("~/lysteria_rivm/results/03_human_predictions/Probabilities_Source_3.tsv")
+```
+
+#2. Wrangle data for plotting
+```{r}
+Probabilities_Source_1$samples<-as.character(Probabilities_Source_1$samples)
+Probabilities_Source_2n1$samples<-as.character(Probabilities_Source_2n1$samples)
+
+Probabilities_Source_1_long <-  melt(Probabilities_Source_1,
+        # ID variables - all the variables to keep but not split apart on
+    id.vars=c("samples", "predictions","experiment"),
+    variable.name="Source", 
+    value.name="Probability" 
+)
+
+Probabilities_Source_2_long <- melt(Probabilities_Source_2,
+        # ID variables - all the variables to keep but not split apart on
+    id.vars=c("samples", "predictions","experiment"),
+    variable.name="Source", 
+    value.name="Probability" 
+)
+
+
+
+
+
+
+```
+
+
+#3. Plot the probabilities
+##3.1 Source 1
+```{r fig.width=7, fig.height=4, dpi=300}
+
+#Before plotting, create a new column to order the rows in descending order of the largest probability
+
+Probabilities_Source_1_long<-Probabilities_Source_1_long %>% dplyr::group_by(samples) %>% dplyr::mutate(max_prob=max(Probability))
+
+
+Probabilities_Source_1_long$Source<-as.factor(Probabilities_Source_1_long$Source)
+Probabilities_Source_1_long$Source <- factor(Probabilities_Source_1_long$Source, levels =c("chicken","plants","game","turkey","small.ruminants","swine","aquatic.products","cattle"))
+
+Probabilities_Source_1_long$facet_variable<-ifelse(Probabilities_Source_1_long$predictions=='cattle','Cattle', ifelse(Probabilities_Source_1_long$predictions=='chicken','Chicken','Other'))
+
+prob_source_1<-ggplot(Probabilities_Source_1_long, aes(x=reorder(samples,-max_prob), y=Probability, fill=Source)) + geom_bar(stat='identity', position='stack', width = 1) +
+  theme_bw()+
+  scale_fill_manual(values = c('#fde725','#440154','#472d7b','#3b528b','#2c728e','#21918c','#28ae80','#addc30'))+
+  theme(plot.title = element_text(size=0,hjust = 0.5,face='bold'),
+        axis.title.x = element_text(size=16,face='bold'), 
+        axis.text.x=element_text(size=0,angle=45, hjust=1),
+        axis.title.y=element_text(size=16,face="bold"), 
+        axis.text.y=element_text(size=12,angle=0),
+        axis.ticks.x = element_blank(),
+        legend.title = element_text(size = 12), 
+        legend.text = element_text(size = 12),
+        legend.position='top',
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        panel.border = element_blank(),
+        panel.background = element_blank(),
+        strip.text.x = element_text(size = 12))+
+        #panel.spacing = unit(0, "cm"))  +
+  labs(fill='') +
+   xlab('Sample') + 
+  ylab('Probability') +
+  facet_grid(~facet_variable,scales = 'free_x', space='free_x')
+
+prob_source_1
+
+#Get the second most-frequent probability in each group
+Probabilities_Source_1_long<- Probabilities_Source_1_long %>%
+  dplyr::group_by(samples) %>%
+  dplyr::mutate(second_max_source = Source[order(Probability, decreasing = TRUE)][2])
+
+Source_1_2nd_probs<-unique(Probabilities_Source_1_long[,c(1,2,8)]) %>% dplyr::group_by(predictions,second_max_source) %>% dplyr::summarise(count=n())
+
+
+```
+##3.2 Source 2
+```{r fig.width=8, fig.height=4, dpi=300}
+
+#Before plotting, create a new column to order the rows in descending order of the largest probability
+
+Probabilities_Source_2_long<-Probabilities_Source_2_long %>% dplyr::group_by(samples) %>% dplyr::mutate(max_prob=max(Probability))
+
+
+Probabilities_Source_2_long$facet_variable<-ifelse(Probabilities_Source_2_long$predictions=='fresh meat','Fresh meat', ifelse(Probabilities_Source_2_long$predictions=='processed meat','Proc. meat','Other'))
+
+Probabilities_Source_2_long$facet_variable <- factor(Probabilities_Source_2_long$facet_variable, levels =c("Fresh meat","Proc. meat","Other"))
+
+Probabilities_Source_2_long$Source<-as.factor(Probabilities_Source_2_long$Source)
+Probabilities_Source_2_long$Source <- factor(Probabilities_Source_2_long$Source, levels =c("processed.meat","eel","plants","spices.herbs.vegetables","mackerel","dairy","feces","trout","shrimp","herring","salmon","fresh.meat"))
+
+
+prob_source_2<-ggplot(Probabilities_Source_2_long, aes(x=reorder(samples,-max_prob), y=Probability, fill=Source)) + geom_bar(stat='identity', position='stack', width = 1) +
+  theme_bw()+
+  scale_fill_manual(values = c('#000004',"#4f0d6c","#420a68","#6a176e","#932667","#bc3754","#dd513a","#f37819","#fcae12","#fca50a","#f6d746","#fcffa4"))+
+  theme(plot.title = element_text(size=0,hjust = 0.5,face='bold'),
+        axis.title.x = element_text(size=16,face='bold'), 
+        axis.text.x=element_text(size=0,angle=45, hjust=1),
+        axis.title.y=element_text(size=16,face="bold"), 
+        axis.text.y=element_text(size=12,angle=0),
+        axis.ticks.x = element_blank(),
+        legend.title = element_text(size = 12), 
+        legend.text = element_text(size = 12),
+        legend.position='top',
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        panel.border = element_blank(),
+        panel.background = element_blank(),
+        strip.text.x = element_text(size = 12))+
+        #panel.spacing = unit(0, "cm"))  +
+  labs(fill='') +
+   xlab('Sample') + 
+  ylab('Probability') +
+  facet_grid(~facet_variable,scales = 'free_x', space='free_x')
+
+prob_source_2
+
+#Get the second most-frequent probability in each group
+Probabilities_Source_2_long<- Probabilities_Source_2_long %>%
+  dplyr::group_by(samples) %>%
+  dplyr::mutate(second_max_source = Source[order(Probability, decreasing = TRUE)][2])
+
+Source_2_2nd_probs<-unique(Probabilities_Source_2_long[,c(1,2,8)]) %>% dplyr::group_by(predictions,second_max_source) %>% dplyr::summarise(count=n())
+
+
+```
+##3.3 Source 2n1
+```{r fig.width=12, fig.height=6, dpi=300}
+
+Probabilities_Source_2n1_long <- melt(Probabilities_Source_2n1,
+        # ID variables - all the variables to keep but not split apart on
+    id.vars=c("samples", "predictions","experiment"),
+    variable.name="Source",
+    value.name="Probability"
+)
+
+Probabilities_Source_2n1_long<-Probabilities_Source_2n1_long %>% dplyr::group_by(samples) %>% dplyr::mutate(max_prob=max(Probability))
+
+
+Probabilities_Source_2n1_long$facet_variable<-ifelse(Probabilities_Source_2n1_long$predictions=='fresh meat, cattle','FM, cattle',ifelse(Probabilities_Source_2n1_long$predictions=='fresh meat, chicken','FM, chicken', ifelse(Probabilities_Source_2n1_long$predictions=='processed meat, cattle','PM, cattle', ifelse(Probabilities_Source_2n1_long$predictions=='salmon, aquatic products','AP, Salmon','Other'))))
+                                                                                      
+
+Probabilities_Source_2n1_long$facet_variable <- factor(Probabilities_Source_2n1_long$facet_variable, levels =c("FM, cattle","FM, chicken","PM, cattle", "AP, Salmon","Other"))
+
+Probabilities_Source_2n1_long$Source<-as.factor(Probabilities_Source_2n1_long$Source)
+Probabilities_Source_2n1_long$Source <- factor(Probabilities_Source_2n1_long$Source, levels =c("fresh.meat..cattle","fresh.meat..chicken","fresh.meat..small.ruminants","fresh.meat..game","fresh.meat..swine","fresh.meat..turkey","processed.meat..cattle","processed.meat..chicken","processed.meat..swine","processed.meat..turkey","dairy..cattle","feces..small.ruminants","spices.herbs.vegetables..plants","eel..aquatic.products","herring..aquatic.products","mackerel..aquatic.products","shrimp..aquatic.products","trout..aquatic.products","salmon..aquatic.products"))
+
+
+prob_source_2n1<-ggplot(Probabilities_Source_2n1_long, aes(x=reorder(samples,-max_prob), y=Probability, fill=Source)) + geom_bar(stat='identity', position='stack', width = 1) +
+  theme_bw()+
+  #scale_fill_manual(values=c("#f79489","#f9f1f0","#710019","#ec8fd0","#F1CED4","#ba0f30","#81b622","#b68d40","#f8d210","#145DA0","#0C2D48","#B1D4E0","#75E6DA","#282120","#464033","#B1B1B1","#747474","#F4EBD0","#b68d40"))+
+  scale_fill_manual(values=c("#b68d40","#F4EBD0","#B1B1B1","#747474","#464033","#282120","#75E6DA","#B1D4E0","#0C2D48","#145DA0","#f8d210","#b68d40","#81b622","#ba0f30","#F1CED4","#710019","#ec8fd0","#f9f1f0","#f79489"))+
+  theme(plot.title = element_text(size=0,hjust = 0.5,face='bold'),
+        axis.title.x = element_text(size=16,face='bold'), 
+        axis.text.x=element_text(size=0,angle=45, hjust=1),
+        axis.title.y=element_text(size=16,face="bold"), 
+        axis.text.y=element_text(size=12,angle=0),
+        axis.ticks.x = element_blank(),
+        legend.title = element_text(size = 12), 
+        legend.text = element_text(size = 14),
+        legend.position='top',
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        panel.border = element_blank(),
+        panel.background = element_blank(),
+        strip.text.x = element_text(size = 12))+
+        #panel.spacing = unit(0, "cm"))  +
+  labs(fill='') +
+   xlab('Sample') + 
+  ylab('Probability') +
+  facet_grid(~facet_variable,scales = 'free_x', space='free_x')
+
+prob_source_2n1
+
+#Get the second most-frequent probability in each group
+Probabilities_Source_2n1_long<- Probabilities_Source_2n1_long %>%
+  dplyr::group_by(samples) %>%
+  dplyr::mutate(second_max_source = Source[order(Probability, decreasing = TRUE)][2])
+
+Source_2n1_2nd_probs<-unique(Probabilities_Source_2n1_long[,c(1,2,8)]) %>% dplyr::group_by(predictions,second_max_source) %>% dplyr::summarise(count=n())
+
+
+```
+##3.4 Source 3
+```{r fig.width=8, fig.height=6, dpi=300}
+Probabilities_Source_3_long <- melt(Probabilities_Source_3,
+        # ID variables - all the variables to keep but not split apart on
+    id.vars=c("samples", "predictions","experiment"),
+    variable.name="Source",
+    value.name="Probability"
+)
+
+Probabilities_Source_3_long<-Probabilities_Source_3_long %>% dplyr::group_by(samples) %>% dplyr::mutate(max_prob=max(Probability))
+
+
+Probabilities_Source_3_long$facet_variable<-ifelse(Probabilities_Source_3_long$predictions=='jj','jj',ifelse(Probabilities_Source_3_long$predictions=='dddd','dddd', ifelse(Probabilities_Source_3_long$predictions=='rr','rr', ifelse(Probabilities_Source_3_long$predictions=='ggg','ggg',ifelse(Probabilities_Source_3_long$predictions=='ddd','ddd',ifelse(Probabilities_Source_3_long$predictions=='bbbbb','bbbbb','Other'))))))
+                                                                                      
+
+Probabilities_Source_3_long$facet_variable <- factor(Probabilities_Source_3_long$facet_variable, levels =c("jj","dddd","rr", "ggg","ddd","bbbbb","Other"))
+
+#Probabilities_Source_3_long$Source<-as.factor(Probabilities_Source_3_long$Source)
+#Probabilities_Source_3_long$Source <- factor(Probabilities_Source_3_long$Source, levels =c("fresh.meat..cattle","fresh.meat..chicken","fresh.meat..small.ruminants","fresh.meat..game","fresh.meat..swine","fresh.meat..turkey","processed.meat..cattle","processed.meat..chicken","processed.meat..swine","processed.meat..turkey","dairy..cattle","feces..small.ruminants","spices.herbs.vegetables..plants","eel..aquatic.products","herring..aquatic.products","mackerel..aquatic.products","shrimp..aquatic.products","trout..aquatic.products","salmon..aquatic.products"))
+
+hex_codes <- c(
+  "#FF0000", "#FF8000",  "#FFBF80","#00FF00","#FFFF00",
+  "#00FF80", "#00FFFF", "#0080FF", "#0000FF", "#8000FF",
+  "#FF00FF", "#FF0080", "#FF4040", "#FFBF40", "#FFFF80",
+  "#BFFF40", "#80FF80", "#40FFBF", "#40FFFF", "#4080FF",
+  "#4040FF", "#8040FF", "#BF40FF", "#FF40FF", "#FF80FF",
+  "#80FF00", "#FFFFBF", "#BFFFFF", "#80FFFF", "#BF80FF"
+)
+
+
+prob_source_3<-ggplot(Probabilities_Source_3_long, aes(x=reorder(samples,-max_prob), y=Probability, fill=Source)) + geom_bar(stat='identity', position='stack', width = 1) +
+  theme_bw()+
+  scale_fill_manual(values=hex_codes)+
+  theme(plot.title = element_text(size=0,hjust = 0.5,face='bold'),
+        axis.title.x = element_text(size=16,face='bold'), 
+        axis.text.x=element_text(size=0,angle=45, hjust=1),
+        axis.title.y=element_text(size=16,face="bold"), 
+        axis.text.y=element_text(size=12,angle=0),
+        axis.ticks.x = element_blank(),
+        legend.title = element_text(size = 12), 
+        legend.text = element_text(size = 12),
+        legend.position='top',
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        panel.border = element_blank(),
+        panel.background = element_blank(),
+        strip.text.x = element_text(size = 12))+
+        #panel.spacing = unit(0, "cm"))  +
+  labs(fill='') +
+   xlab('Sample') + 
+  ylab('Probability') +
+  facet_grid(~facet_variable,scales = 'free_x', space='free_x')
+
+prob_source_3
+
+#Get the second most-frequent probability in each group
+Probabilities_Source_3_long<- Probabilities_Source_3_long %>%
+  dplyr::group_by(samples) %>%
+  dplyr::mutate(second_max_source = Source[order(Probability, decreasing = TRUE)][2])
+
+Source_3_2nd_probs<-unique(Probabilities_Source_3_long[,c(1,2,8)]) %>% dplyr::group_by(predictions,second_max_source) %>% dplyr::summarise(count=n())
+
+```
+
+
+#OLD STUFF
+```{r}
+
+
+#Separate the samples according to final prediction
+Probabilities_Source_1_long_cattle<-Probabilities_Source_1_long[Probabilities_Source_1_long$predictions=='cattle',]
+Probabilities_Source_1_long_cattle$Source<-as.factor(Probabilities_Source_1_long_cattle$Source)
+Probabilities_Source_1_long_cattle$Source <- factor(Probabilities_Source_1_long_cattle$Source, levels =c("plants","game","turkey","small.ruminants","swine","aquatic.products","chicken","cattle"))
+
+prob_source_1_cattle<-ggplot(Probabilities_Source_1_long_cattle, aes(x=reorder(samples,-max_prob), y=Probability, fill=Source)) + geom_bar(stat='identity', position='stack', width = 1) +
+  theme_bw()+
+  scale_fill_manual(values = c('#440154','#472d7b','#3b528b','#2c728e','#21918c','#28ae80','#fde725','#addc30'))+
+  theme(plot.title = element_text(size=0,hjust = 0.5,face='bold'),
+        axis.title.x = element_text(size=0,face='bold'), 
+        axis.text.x=element_text(size=0,angle=45, hjust=1),
+        axis.title.y=element_text(size=16,face="bold"), 
+        axis.text.y=element_text(size=12,angle=0),
+        axis.ticks.x = element_blank(),
+        legend.title = element_text(size = 0), 
+        legend.text = element_text(size = 0),
+        legend.position='none',
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        panel.border = element_blank(),
+        panel.background = element_blank(),
+        strip.text.x = element_blank(),
+        panel.spacing = unit(0, "cm"))  +
+  labs(fill='') +
+   xlab('Sample') + 
+  ylab('Probability') #+
+  #facet_grid(~predictions,scales = 'free_x', space='free_x')
+
+prob_source_1_cattle
+```
+```{r}
+
+#Separate the samples according to final prediction
+Probabilities_Source_1_long_chicken<-Probabilities_Source_1_long[Probabilities_Source_1_long$predictions=='chicken',]
+
+Probabilities_Source_1_long_chicken$Source<-as.factor(Probabilities_Source_1_long_chicken$Source)
+Probabilities_Source_1_long_chicken$Source <- factor(Probabilities_Source_1_long_chicken$Source, levels =c("plants","game","turkey","small.ruminants","swine","aquatic.products","cattle","chicken"))
+
+prob_source_1_chicken<-ggplot(Probabilities_Source_1_long_chicken, aes(x=reorder(samples,-max_prob), y=Probability, fill=Source)) + geom_bar(stat='identity', position='stack', width = 1) +
+  theme_bw()+
+  scale_fill_manual(values = c('#440154','#472d7b','#3b528b','#2c728e','#21918c','#28ae80','#addc30','#fde725'))+
+  theme(plot.title = element_text(size=0,hjust = 0.5,face='bold'),
+        axis.title.x = element_text(size=0,angle=45, hjust=1), 
+        axis.text.x=element_text(size=0,angle=45, hjust=1),
+        axis.title.y=element_blank(), 
+        axis.text.y=element_blank(),
+        axis.ticks.y = element_blank(),
+        axis.line.y=element_blank(),
+        axis.ticks.x = element_blank(),
+        legend.title = element_text(size = 0), 
+        legend.text = element_text(size = 0),
+        legend.position='none',
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        panel.border = element_blank(),
+        panel.background = element_blank(),
+        strip.text.x = element_blank(),
+        panel.spacing = unit(0, "cm"))  +
+  labs(fill='') +
+   xlab('Sample') + 
+  ylab('Probability') #+
+  #facet_grid(~predictions,scales = 'free_x', space='free_x')
+
+prob_source_1_chicken
+
+```
+```{r}
+
+#Separate the samples according to final prediction
+Probabilities_Source_1_long_other<-Probabilities_Source_1_long[Probabilities_Source_1_long$predictions!='chicken'&Probabilities_Source_1_long$predictions!='cattle',]
+
+Probabilities_Source_1_long_other$Source<-as.factor(Probabilities_Source_1_long_other$Source)
+Probabilities_Source_1_long_other$Source <- factor(Probabilities_Source_1_long_other$Source, levels =c("plants","game","turkey","small.ruminants","swine","chicken","cattle","aquatic.products"))
+
+prob_source_1_other<-ggplot(Probabilities_Source_1_long_other, aes(x=reorder(samples,-max_prob), y=Probability, fill=Source)) + geom_bar(stat='identity', position='stack', width = 1) +
+  theme_bw()+
+  scale_fill_manual(values = c('#440154','#472d7b','#3b528b','#2c728e','#21918c','#fde725','#addc30','#28ae80'))+
+  theme(plot.title = element_text(size=0,hjust = 0.5,face='bold'),
+        axis.title.x = element_text(size=0,angle=45, hjust=1), 
+        axis.text.x=element_text(size=0,angle=45, hjust=1),
+        axis.title.y=element_blank(), 
+        axis.text.y=element_blank(),
+        axis.ticks.y = element_blank(),
+        axis.line.y=element_blank(),
+        axis.ticks.x = element_blank(),
+        legend.title = element_text(size = 0), 
+        legend.text = element_text(size = 0),
+        legend.position='none',
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        panel.border = element_blank(),
+        panel.background = element_blank(),
+        strip.text.x = element_blank(),
+        panel.spacing = unit(0, "cm"))  +
+  labs(fill='') +
+   xlab('Sample') + 
+  ylab('Probability') #+
+  #facet_grid(~predictions,scales = 'free_x', space='free_x')
+
+prob_source_1_other
+
+```
+
+```{r}
+plots <- list(prob_source_1_cattle,prob_source_1_chicken)
+
+grid.arrange(prob_source_1_cattle,prob_source_1_chicken,prob_source_1_other,nrow=1,widths=c(6,2,2))
+```
+
+
+
+
+
+
+
+
+
+
+
+
