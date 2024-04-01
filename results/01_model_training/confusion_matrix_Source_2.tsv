@@ -1,0 +1,12 @@
+	dairy	eel	feces	fresh meat	herring	mackerel	processed meat	salmon	shrimp	spices/herbs/vegetables	trout
+dairy	10	0	1	1	0	0	0	0	0	0	0
+eel	0	6	0	3	0	0	0	1	0	0	0
+feces	1	0	3	6	0	0	7	1	1	0	0
+fresh meat	1	1	4	383	3	1	51	3	0	2	0
+herring	0	0	0	7	30	1	1	1	1	0	0
+mackerel	0	0	0	2	2	0	1	4	0	1	2
+processed meat	0	3	1	100	0	0	88	2	3	1	1
+salmon	0	1	0	11	0	1	2	69	0	1	2
+shrimp	0	1	0	1	0	0	2	0	5	1	0
+spices/herbs/vegetables	0	0	0	10	1	1	3	0	1	4	0
+trout	0	1	0	3	0	0	0	4	0	0	43

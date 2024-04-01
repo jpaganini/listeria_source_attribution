@@ -1,0 +1,20 @@
+	dairy, cattle	eel, aquatic products	feces, small ruminants	fresh meat, cattle	fresh meat, chicken	fresh meat, game	fresh meat, small ruminants	fresh meat, swine	fresh meat, turkey	herring, aquatic products	mackerel, aquatic products	processed meat, cattle	processed meat, chicken	processed meat, swine	processed meat, turkey	salmon, aquatic products	shrimp, aquatic products	spices/herbs/vegetables, plants	trout, aquatic products
+dairy, cattle	10	0	1	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0
+eel, aquatic products	0	4	0	1	2	0	0	0	0	0	1	0	0	0	0	1	0	0	1
+feces, small ruminants	2	0	1	2	4	0	0	0	1	0	0	2	2	0	0	0	1	0	1
+fresh meat, cattle	0	1	3	89	17	0	1	2	0	1	0	26	0	3	0	2	0	2	2
+fresh meat, chicken	0	0	2	6	190	0	2	2	3	1	2	12	22	1	0	1	0	2	2
+fresh meat, game	0	0	0	2	1	0	0	0	0	0	0	1	1	0	0	0	0	0	0
+fresh meat, small ruminants	0	0	0	5	3	0	0	0	0	0	1	2	0	1	0	0	0	0	1
+fresh meat, swine	0	0	0	3	2	0	0	3	0	0	0	1	0	2	0	0	0	0	0
+fresh meat, turkey	1	0	1	0	5	0	0	0	12	0	0	0	0	0	4	0	0	0	0
+herring, aquatic products	0	0	0	4	5	0	0	0	0	28	2	1	0	0	0	1	0	0	0
+mackerel, aquatic products	0	0	0	0	2	0	0	0	0	2	0	0	0	0	0	4	0	1	3
+processed meat, cattle	0	0	3	22	13	1	0	0	0	2	1	65	1	0	0	2	0	0	0
+processed meat, chicken	0	0	0	5	37	1	0	0	0	0	0	4	19	0	1	0	0	1	0
+processed meat, swine	0	0	0	1	1	0	1	2	0	0	0	0	0	2	0	0	0	0	0
+processed meat, turkey	0	0	0	0	5	0	0	0	4	0	0	0	1	0	1	0	0	0	0
+salmon, aquatic products	0	1	0	3	5	0	0	0	0	0	3	1	1	0	0	69	0	1	3
+shrimp, aquatic products	0	1	0	1	0	0	0	0	0	1	0	1	0	0	0	0	5	1	0
+spices/herbs/vegetables, plants	0	0	0	3	6	0	0	0	0	1	1	1	1	0	0	0	1	5	1
+trout, aquatic products	0	1	0	1	1	0	0	0	0	0	1	0	0	0	0	4	0	0	43
