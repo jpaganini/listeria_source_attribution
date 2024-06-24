@@ -6,5 +6,5 @@ To generate the RF models and to reproduce table(s) 2 to 4 and supplementary tab
 
 To reproduce table 5, Figure 1 and Supplementary Figures 1 to 3, run the script: src/Plots_tables.Rmd
 
-RF models can also be obtained from the following zenodo repo: 
+RF models can also be obtained from the following zenodo repo: https://zenodo.org/doi/10.5281/zenodo.12515149 
  
