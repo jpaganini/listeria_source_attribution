@@ -164,6 +164,7 @@ def tune_model(model_name, model_input, sampling, block_strategy, cv_strategy, e
     cv_results=pd.DataFrame(model_tunning.cv_results_)
     best_model=model_tunning.best_estimator_
 
+
     #Filter the results of the classifier
     best_index = model_tunning.best_index_
     best_cv_results=pd.DataFrame(cv_results.iloc[best_index,:])
@@ -173,6 +174,10 @@ def tune_model(model_name, model_input, sampling, block_strategy, cv_strategy, e
     #EXPORT THE ML MODEL
     model_file_name = f'../results/02_RF_models/RF_model_{experiment_name}.joblib'  # Using f-string formatting
     joblib.dump(best_model, model_file_name)
+
+    # EXPORT THE RESULTS OF HYPERPARAMETER OPTIMIZATION
+    hyper_parameter_tuning_path= f'../results/01_model_training/01_hyp_tuning/Hyp_tuning_{experiment_name}.tsv'
+    cv_results.to_csv(hyper_parameter_tuning_path, sep='\t')
 
     return best_param,best_cv_results,best_model
 
@@ -355,6 +360,7 @@ print('All data has been imported')
 
 #2. RF HYPER-PARAMETER OPTIMIZATION & ACCURACY CALCULATION
 ##2.1 Source_1
+#
 rf_best_params_source_1,best_cv_results_source_1,rf_model_source_1 = tune_model('RF',train_data_s1, 'none', 'none', 'random','Source_1')
 rf_best_params_source_1_up,best_cv_results_source_1_up,rf_model_source_1_up = tune_model('RF',train_data_s1, 'random', 'none', 'random','Source_1_up')
 ##2.2 Source_2
