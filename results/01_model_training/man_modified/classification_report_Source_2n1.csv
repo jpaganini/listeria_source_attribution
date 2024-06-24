@@ -1,0 +1,23 @@
+		Without up sampling			With up sampling		
+Source	Nr. of isolates	Precision	Recall	F1-score	Precision	Recall	F1-score
+dairy, cattle	12	0.769	0.833	0.8	0.833	0.833	0.833
+eel, aquatic products	10	0.5	0.4	0.444	0.556	0.5	0.526
+feces, small ruminants	16	0.091	0.063	0.074	0	0	0
+fresh meat, cattle	149	0.601	0.597	0.599	0.6	0.604	0.602
+fresh meat, chicken	248	0.635	0.766	0.695	0.674	0.633	0.653
+fresh meat, game	5	0	0	0	0	0	0
+fresh meat, small ruminants	13	0	0	0	0	0	0
+fresh meat, swine	11	0.333	0.273	0.3	0.375	0.273	0.316
+fresh meat, turkey	23	0.571	0.522	0.545	0.529	0.391	0.45
+herring, aquatic products	41	0.778	0.683	0.727	0.784	0.707	0.744
+mackerel, aquatic products	12	0	0	0	0	0	0
+processed meat, cattle	110	0.556	0.591	0.573	0.532	0.6	0.564
+processed meat, chicken	68	0.396	0.279	0.328	0.306	0.324	0.314
+processed meat, swine	7	0.222	0.286	0.25	0.222	0.286	0.25
+processed meat, turkey	11	0.167	0.091	0.118	0.188	0.545	0.279
+salmon, aquatic products	87	0.821	0.793	0.807	0.817	0.77	0.793
+shrimp, aquatic products	10	0.714	0.5	0.588	0.714	0.5	0.588
+spices/herbs/vegetables, plants	20	0.385	0.25	0.303	0.333	0.25	0.286
+trout, aquatic products	51	0.754	0.843	0.796	0.754	0.843	0.796
+macro avg		0.437	0.409	0.418	0.433	0.424	0.421
+weighted avg		0.584	0.604	0.59	0.583	0.574	0.576

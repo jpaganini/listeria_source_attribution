@@ -1,0 +1,15 @@
+		Without up sampling			With up sampling		
+Source	Nr. of isolates	Precision	Recall	F1-score	Precision	Recall	F1-score
+dairy	12	0.833	0.833	0.833	0.667	0.833	0.741
+eel	10	0.462	0.6	0.522	0.5	0.6	0.545
+feces	19	0.333	0.158	0.214	0.214	0.158	0.182
+fresh meat	449	0.727	0.853	0.785	0.762	0.771	0.766
+herring	41	0.833	0.732	0.779	0.769	0.732	0.75
+mackerel	12	0	0	0	0	0	0
+processed meat	199	0.568	0.442	0.497	0.502	0.528	0.515
+salmon	87	0.812	0.793	0.802	0.792	0.701	0.744
+shrimp	10	0.455	0.5	0.476	0.385	0.5	0.435
+spices/herbs/vegetables	20	0.4	0.2	0.267	0.364	0.2	0.258
+trout	51	0.896	0.843	0.869	0.878	0.843	0.86
+macro avg		0.574	0.541	0.549	0.53	0.533	0.527
+weighted avg		0.685	0.704	0.689	0.676	0.674	0.674
