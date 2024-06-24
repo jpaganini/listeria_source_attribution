@@ -1,0 +1,21 @@
+Model	Number_decision_trees	Number_features	Max_tree_depth
+S1	377	sqrt	322
+S1 + upsampling	911	sqrt	366
+S2	1000	sqrt	500
+S2 + upsampling	644	sqrt	233
+S2n1	733	log2	455
+S2n1 + upsampling	288	sqrt	411
+S3	1000	sqrt	500
+S3 + upsampling	377	log2	277
+			
+Supplementary Table 11. Optimized Hyperparameter Values for Each Model Obtained Through 10-Fold Cross Validation.			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+		 	
